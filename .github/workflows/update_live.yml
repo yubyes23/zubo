@@ -11,11 +11,15 @@ on:
 jobs:
   update-m3u:
     runs-on: ubuntu-latest
+    
+    # 🔑 加上这一段，授权 GitHub Actions 可以向仓库写文件
+    permissions:
+      contents: write
 
     steps:
-    # 1. 拉取仓库代码
     - name: Checkout repository
       uses: actions/checkout@v4
+...
 
     # 2. 配置 Python 环境
     - name: Set up Python
