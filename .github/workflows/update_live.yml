@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Python script
         run: |
-          python gemini-code-1789337815793.py
+          python 1789337815793.py
 
       - name: Commit and push M3U file
         run: |
