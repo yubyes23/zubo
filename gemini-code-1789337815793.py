@@ -85,10 +85,10 @@ def get_all_categories_m3u():
             page.on("response", handle_response)
 
             try:
-                page.goto(cat_url, timeout=60000)
-                # 滚动页面以触发接口加载，直到攒够 20 个房间或超时
+                page.goto(cat_url, timeout=60000, wait_until="domcontentloaded")
+                # 滚动页面以触发接口加载，直到攒够 15 个房间或超时
                 for _ in range(4):
-                    if len(category_rooms) >= 20:
+                    if len(category_rooms) >= 15:
                         break
                     page.evaluate("window.scrollBy(0, window.innerHeight * 2)")
                     page.wait_for_timeout(2000)
@@ -99,7 +99,7 @@ def get_all_categories_m3u():
             page.remove_listener("response", handle_response)
 
             # 严格截取前 20 个房间
-            limited_rooms = category_rooms[:20]
+            limited_rooms = category_rooms[:15]
             print(f"[✓] 分类【{cat_name}】成功捕获 {len(limited_rooms)} 个房间：")
             
             for r in limited_rooms:
