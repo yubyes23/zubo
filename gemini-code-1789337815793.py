@@ -19,7 +19,7 @@ def get_all_categories_m3u():
     with sync_playwright() as p:
         print("[*] 正在启动浏览器...")
         browser = p.chromium.launch(
-            headless=False,
+            headless=True,
             args=["--disable-blink-features=AutomationControlled"]
         )
         context = browser.new_context(
