@@ -1,8 +1,37 @@
+import os
 import json
+import requests
 from playwright.sync_api import sync_playwright
 
+def upload_to_cloudflare_kv(m3u_content):
+    # 从环境变量中读取刚才配置的 3 个凭证
+    account_id = os.environ.get("CF_ACCOUNT_ID")
+    namespace_id = os.environ.get("CF_KV_NAMESPACE_ID")
+    api_token = os.environ.get("CF_API_TOKEN")
+    
+    if not all([account_id, namespace_id, api_token]):
+        print("[!] 警告: 未检测到 Cloudflare KV 环境变量，跳过 KV 上传。")
+        return
+
+    key_name = "douyin_all.m3u"
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/values/{key_name}"
+    
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "text/plain; charset=utf-8"
+    }
+    
+    print(f"[*] 正在将 M3U 内容上传到 Cloudflare KV...")
+    try:
+        response = requests.put(url, headers=headers, data=m3u_content.encode("utf-8"))
+        if response.status_code == 200:
+            print("[✓] 成功：已实时同步到 Cloudflare KV！")
+        else:
+            print(f"[!] 上传到 KV 失败: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"[!] 连接 Cloudflare KV API 发生异常: {e}")
+
 def get_all_categories_m3u():
-    # 定义 8 个分类及其对应的 URL（以 4_101 开始依次递增）
     categories = {
         "聊天": "https://live.douyin.com/categorynew/4_101",
         "音乐": "https://live.douyin.com/categorynew/4_102",
@@ -27,7 +56,6 @@ def get_all_categories_m3u():
         )
         page = context.new_page()
 
-        # 递归提取函数
         def extract_rooms(data, rooms_list, seen_ids):
             if isinstance(data, dict):
                 title = data.get("title")
@@ -64,7 +92,6 @@ def get_all_categories_m3u():
                 for item in data:
                     extract_rooms(item, rooms_list, seen_ids)
 
-        # 依次循环抓取 8 个分类
         for cat_name, cat_url in categories.items():
             print(f"\n----------------------------------------")
             print(f"[*] 正在抓取分类: 【{cat_name}】 -> {cat_url}")
@@ -73,7 +100,6 @@ def get_all_categories_m3u():
             category_rooms = []
             seen_ids = set()
 
-            # 监听当前页面的网络接口响应
             def handle_response(response):
                 if "json" in response.headers.get("content-type", ""):
                     try:
@@ -86,7 +112,6 @@ def get_all_categories_m3u():
 
             try:
                 page.goto(cat_url, timeout=60000, wait_until="domcontentloaded")
-                # 滚动页面以触发接口加载，直到攒够 15 个房间或超时
                 for _ in range(4):
                     if len(category_rooms) >= 15:
                         break
@@ -95,10 +120,8 @@ def get_all_categories_m3u():
             except Exception as e:
                 print(f"[!] 访问分类 {cat_name} 时发生异常: {e}")
 
-            # 移除当前页面的监听，避免影响下一个分类
             page.remove_listener("response", handle_response)
 
-            # 严格截取前 20 个房间
             limited_rooms = category_rooms[:15]
             print(f"[✓] 分类【{cat_name}】成功捕获 {len(limited_rooms)} 个房间：")
             
@@ -113,15 +136,12 @@ def get_all_categories_m3u():
 
         browser.close()
 
-    # ==========================================
-    # ⚙️ 生成带 group-title 分组的聚合 M3U 文件
-    # ==========================================
-    output_file = "douyin_all.m3u"
+    # 组装 M3U 文本内容
     FIXED_PREFIX = "http://192.168.0.109/TV/douyin.php?type=rid&rid="
-    
     m3u_content = "#EXTM3U\n"
+    
     print(f"\n========================================")
-    print(f"[✓] 全部抓取完毕！正在生成聚合 M3U 文件，总计 {len(all_rooms_data)} 个房间：")
+    print(f"[✓] 全部抓取完毕！共计 {len(all_rooms_data)} 个房间")
     print(f"========================================")
     
     for r in all_rooms_data:
@@ -130,14 +150,10 @@ def get_all_categories_m3u():
         clean_name = display_name.encode('utf-8', 'ignore').decode('utf-8')
         cat_tag = r['category']
         
-        # 🔑 核心：写入标准的 group-title 分组标记属性
         m3u_content += f'#EXTINF:-1 tvg-name="{r["nickname"]}" group-title="{cat_tag}", {clean_name}\n{stream_url}\n'
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(m3u_content)
-        
-    print(f"\n[✓] 完美搞定！聚合 M3U 文件已成功保存到: {output_file}")
-    print(f"提示：你可以直接把 {output_file} 拖入 PotPlayer 等支持分组的播放器中播放！")
+    # 直接上传到 Cloudflare KV
+    upload_to_cloudflare_kv(m3u_content)
 
 if __name__ == "__main__":
     get_all_categories_m3u()
