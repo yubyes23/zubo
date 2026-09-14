@@ -4,10 +4,10 @@ import requests
 from playwright.sync_api import sync_playwright
 
 def upload_to_cloudflare_kv(m3u_content):
-    # 从环境变量中读取刚才配置的 3 个凭证
-    account_id = os.environ.get("CF_ACCOUNT_ID")
-    namespace_id = os.environ.get("CF_KV_NAMESPACE_ID")
-    api_token = os.environ.get("CF_API_TOKEN")
+    # 使用 .strip() 自动清理掉可能存在的空格和换行符
+    account_id = os.environ.get("CF_ACCOUNT_ID", "").strip()
+    namespace_id = os.environ.get("CF_KV_NAMESPACE_ID", "").strip()
+    api_token = os.environ.get("CF_API_TOKEN", "").strip()
     
     if not all([account_id, namespace_id, api_token]):
         print("[!] 警告: 未检测到 Cloudflare KV 环境变量，跳过 KV 上传。")
@@ -30,7 +30,6 @@ def upload_to_cloudflare_kv(m3u_content):
             print(f"[!] 上传到 KV 失败: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"[!] 连接 Cloudflare KV API 发生异常: {e}")
-
 def get_all_categories_m3u():
     categories = {
         "聊天": "https://live.douyin.com/categorynew/4_101",
