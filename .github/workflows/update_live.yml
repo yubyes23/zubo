@@ -2,7 +2,7 @@ name: Update Douyin Live M3U
 
 on:
   schedule:
-    - cron: '13 */3 * * *'
+    - cron: '13 */2 * * *'
   workflow_dispatch:
 
 jobs:
