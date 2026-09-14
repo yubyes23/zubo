@@ -116,7 +116,7 @@ def get_all_categories_m3u():
     # ==========================================
     # ⚙️ 生成带 group-title 分组的聚合 M3U 文件
     # ==========================================
-    output_file = "douyin_all_categories.m3u"
+    output_file = "douyin_all.m3u"
     FIXED_PREFIX = "http://192.168.0.109/TV/douyin.php?type=rid&rid="
     
     m3u_content = "#EXTM3U\n"
