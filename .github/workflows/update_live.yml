@@ -2,7 +2,7 @@ name: Update Douyin Live M3U to KV
 
 on:
   schedule:
-    - cron: '13 */2 * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
